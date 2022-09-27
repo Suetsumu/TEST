@@ -1,0 +1,18 @@
+[2022-09-27 15:27:54 - MG-WFBP - INFO] [1,   100] traing_loss: 1.957968
+[2022-09-27 15:28:40 - MG-WFBP - INFO] [1,   200] traing_loss: 1.674594
+[2022-09-27 15:29:27 - MG-WFBP - INFO] [1,   300] traing_loss: 1.527861
+[2022-09-27 15:30:12 - MG-WFBP - INFO] Train acc:38.79%
+[2022-09-27 15:30:26 - MG-WFBP - INFO] Test acc: 41.47%
+[2022-09-27 15:31:15 - MG-WFBP - INFO] [2,   100] traing_loss: 1.243872
+[2022-09-27 15:32:06 - MG-WFBP - INFO] [2,   200] traing_loss: 1.178694
+[2022-09-27 15:32:55 - MG-WFBP - INFO] [2,   300] traing_loss: 1.062212
+[2022-09-27 15:33:39 - MG-WFBP - INFO] Train acc:59.24%
+[2022-09-27 15:33:52 - MG-WFBP - INFO] Test acc: 55.43%
+[2022-09-27 15:34:43 - MG-WFBP - INFO] [3,   100] traing_loss: 0.963242
+[2022-09-27 15:35:32 - MG-WFBP - INFO] [3,   200] traing_loss: 0.898026
+[2022-09-27 15:36:21 - MG-WFBP - INFO] [3,   300] traing_loss: 0.869747
+[2022-09-27 15:37:07 - MG-WFBP - INFO] Train acc:68.26%
+[2022-09-27 15:37:20 - MG-WFBP - INFO] Test acc: 63.13%
+[2022-09-27 15:38:11 - MG-WFBP - INFO] [4,   100] traing_loss: 0.785779
+[2022-09-27 15:38:59 - MG-WFBP - INFO] [4,   200] traing_loss: 0.765050
+[2022-09-27 15:39:47 - MG-WFBP - INFO] [4,   300] traing_loss: 0.746754
