@@ -8,7 +8,7 @@ from torch import nn
 # import matplotlib
 # import matplotlib.pyplot as plt
 from torch.autograd import Variable
-from logConfig import logger
+from logConfig import logConfig
 from model.resnet20 import ResNet20
 # from transformer_resnet import ResNet20
 from dataset_prepare.cifar10 import read_cifar10
@@ -17,7 +17,29 @@ os.environ['CUDA_VISIBLE_DEVICES']='1,2'
 import torch.multiprocessing as mp
 import torch.distributed as dist
 import torchvision.transforms as transforms
-import datetime
+from datetime import datetime
+
+class ConvNet(nn.Module):
+    def __init__(self, num_classes=10):
+        super(ConvNet, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.fc = nn.Linear(7 * 7 * 32, num_classes)
+
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = out.reshape(out.size(0), -1)
+        out = self.fc(out)
+        return out
 def deparallel_train():
     since = time.time()
     data_dir = './dataset/cifar'
@@ -229,18 +251,84 @@ def main():
                         help='number of gpus per node')
     parser.add_argument('-nr', '--nr', default=0, type=int,
                         help='ranking within the nodes') #node的序号
-    parser.add_argument('--epochs', default=2, type=int,
+    parser.add_argument('--epochs', default=5, type=int,
                         metavar='N',
                         help='number of total epochs to run')  #总训练轮数
     args = parser.parse_args()
     #########################################################
     args.world_size = args.gpus * args.nodes  #
-    os.environ['MASTER_ADDR'] = '119.23.152.46'  #主进程的IP
+    os.environ['MASTER_ADDR'] = 'localhost'  #主进程的IP
     os.environ['MASTER_PORT'] = '8888'  #
-    mp.spawn(parallel_train, nprocs=args.gpus, args=(args,))  #
+    if args.world_size == 1:
+        deparallel_train2(args)
+    else:
+        mp.spawn(parallel_train, nprocs=args.gpus, args=(args,))  #
     #########################################################
 
+def deparallel_train2(args,gpu=0):
+    #pytorch是cpu版的
+    logger = logConfig("deparallel_train2.log").logger
+    rank = 0
+    #这里设置了种子，定义了模型，设置了gpu，数据集块，交叉熵loss，SGD优化器
+    torch.manual_seed(0)
+    model = ResNet20()
+    # torch.cuda.set_device(gpu)
+    # model.cuda(gpu)
+    batch_size = 300
+    # define loss function (criterion) and optimizer
+    # criterion = nn.CrossEntropyLoss().cuda(gpu)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = ResNet20().to(device)
+    criterion = nn.CrossEntropyLoss().to(device)
+    optimizer = torch.optim.SGD(model.parameters(), 1e-4)
+
+    # Data loading code
+    train_dataset = torchvision.datasets.CIFAR10(
+        root='./dataset/cifar',
+        train=True,
+        transform=transforms.ToTensor(),
+        download=True
+    )
+    ################################################################
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset,
+        batch_size=batch_size,
+        ##############################
+        shuffle=False,  #
+        ##############################
+        num_workers=0,
+        pin_memory=True,
+        #############################
+        )  #
+    #############################
+
+    start = datetime.now()
+    total_step = len(train_loader)
+    for epoch in range(args.epochs):
+        for i, (images, labels) in enumerate(train_loader):
+
+            # Forward pass
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if (i + 1) % 100 == 0 :
+                logger.info('rank [{}],Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
+                    rank,
+                    epoch + 1,
+                    args.epochs,
+                    i + 1,
+                    total_step,
+                    loss.item())
+                   )
+    if rank == 0:
+        print("Training complete in: " + str(datetime.now() - start))
+        logger.info("rank [{}],Training complete in: ".format(rank) + str(datetime.now() - start))
 
 if __name__ == '__main__':
 
-    deparallel_train()
+    main()
